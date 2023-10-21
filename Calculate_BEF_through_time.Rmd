@@ -1,0 +1,118 @@
+---
+title: "LEMMNA BEF: CALCULATE BEF THROUGH TIME"
+author: "meganedeziel"
+date: "2023-09-27"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### package loading
+```{r, messages = FALSE}
+library(here)
+library(tidyverse)
+library(nlme)
+library(emmeans)
+```
+
+### data importation
+```{r}
+#Total biomass through time 
+Biomass_data<-read.csv(here("data", "Biomass_data.csv"), sep=";")
+
+#Relative biomass through time 
+Relbiomass_data<-read.csv(here("data", "Relativebiomass_data.csv"), sep=";")
+
+#Net effect, CE, SE 
+NE_data<-read.csv(here("data", "NE_data.csv"), sep=";")
+str(NE_data)
+
+NE_data<-NE_data %>%
+  mutate(across(c("Polyculture", "Block", "Composition"), 
+                as.factor))
+
+NE_data$dummy<-1
+
+```
+
+### biomass at day 60 
+```{r}
+#mean biomass at day 60 per species 
+biomass_60<-Relbiomass_data[Relbiomass_data$Days==60, ] %>%
+  select(., c(1:3, 5, 6, 10))
+biomass_60_p<-ggplot(biomass_60) +
+  geom_bar(aes(x-as.factor(Mixture), y=Final_relbiomass), stat="mean", fill=Species) + xlab("Mixture composition") + ylab("Biomass (mg)")
+
+
+biomass_60_p
+
+geom_bar( aes(x=name, y=value), stat="identity", fill="skyblue", alpha=0.7)
+
+```
+
+```{r, eval=FALSE, echo=FALSE}
+### TESTS
+library(nlmeU)
+fcat1 <- within(fcat, one1 <- one2 <- 1L) # This creates the unit auxiliary variables.
+lme_model <- lme(scorec ~ 1, 
+             random = list(one1 = pdIdent(~target-1), one2 = pdIdent(~id-1)), 
+             data = fcat1)
+```
+
+### ANOVA 1 : net effect through time
+```{r}
+NE_datatest<-NE_data
+NE_datatest$RYT[NE_datatest$Days==0]<-1
+modNE <- lme(NE ~ Days,
+              random=list(dummy=pdBlocked(list(pdIdent(~Composition-1),
+                                               pdIdent(~Block-1)))),
+              data=NE_data,
+              weights=varIdent(form=~ 1 | Days),
+              method="REML", 
+              control=list(msMaxIter=1000,
+                             msMaxEval=1000))
+
+anova(modNE)
+contrast<-emmeans(modNE, "Days")
+pairs(contrast)
+modNE = lme (NE ~ Jours, 
++    random=list(dummy = pdBlocked(list(pdIdent(~Composition-1),
++                                     pdIdent(~Bloc-1)))), 
++    data=data,
++    weights = varIdent(form = ~1 | Jours),method="REML",control =list(msMaxIter = 1000, msMaxEval = 1000))
+
+```
+
+### ANOVA 2: CE through time
+```{r}
+modCE<-lme(CE ~ Days,
+           random=list(dummy=pdBlocked(list(pdIdent(~Composition-1),
+                                            pdIdent(~Block-1)))),
+           data=NE_data,
+           weights=varIdent(form=~1|Days), 
+           method="REML",
+           control=list(msMaxIter=1000,
+                        msMaxEval=1000))
+
+anova(modCE)
+
+contrast<-emmeans(modCE, "Days")
+pairs(contrast)
+```
+
+### ANOVA 3: SE through time 
+```{r}
+modSE<-lme(SE ~ Days,
+           random=list(dummy=pdBlocked(list(pdIdent(~Composition-1),
+                                            pdIdent(~Block-1)))),
+           data=NE_data,
+           weights=varIdent(form=~1|Days),
+           method="REML",
+           control=list(msMaxIter=1000,
+                        msMaxEval=1000))
+
+anova(modSE)
+```
+
