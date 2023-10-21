@@ -1,0 +1,44 @@
+---
+title: "Average_biomass_per_species"
+author: "meganedeziel"
+date: "2023-10-21"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+```{r}
+library("here")
+library("tidyverse")
+This script will produce Figure 2: The relative contribution of species to the average biomass on day 60 of the experiment
+```{r}
+Biom_data<-read.csv(here("data", "Relativebiomass_data.csv"), sep=";")
+#info on data
+#individual mass : in mg
+#mean LA = mean leaf area : in mg
+#mean SLA = mean specific leaf area : in mm2/mg
+#initial relbiomass : in mg
+#final relbiomass: in mg
+
+Biom_data<-Biom_data %>%
+  mutate(across(c("Culture", "Block", "Mixture", "Species"), 
+                as.factor)) %>%
+  group_by(Mixture)
+  mutate(Biomass_tot_per_mix<-)
+```
+
+```{r}
+Plot_data<-Biom_data[Biom_data$Days==60,] %>%
+  group_by(Mixture, Block) %>% #sum per Mixture per Block
+  mutate(sum_finbiomass=sum(Final_relbiomass)) %>% #i now have the total biomass per culture
+  ungroup() %>%
+  group_by(Mixture) %>% #to calculate mean per mixture, considering the 3 blocks
+  
+  group_by(Mixture) %>%
+  mutate(mean_finbiomass_per_mix=mean(Final_relbiomass))
+ggplot(Biom_data, aes(fill=Species, y=Final_relbiomass, x=Mixture)) +
+    geom_bar(position="stack", stat="identity")
+
+```
+

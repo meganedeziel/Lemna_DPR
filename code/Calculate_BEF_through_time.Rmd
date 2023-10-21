@@ -107,7 +107,7 @@ qqline(resid(modNE,type="pearson"))
 
 ##PLOT
 # I use the Tofino color palette from hcl.colors
-hcl.colors(4, palette="Fall")
+hcl.colors(5, palette="BluGrn")
 
 NE_meanse<-data.frame(
   days=c("0", "20", "40", "60"),
@@ -117,7 +117,7 @@ NE_meanse<-data.frame(
 NE_meanse$ci<-NE_meanse$se*1.96
 
 NEp<-ggplot(NE_meanse) +
-  geom_bar(aes(x=days, y=mean), colour="black", fill="#3C5941", stat="identity", alpha=0.7) +
+  geom_bar(aes(x=days, y=mean), colour="black", fill="#14505C", stat="identity", alpha=0.7) +
   #geom_errorbar(aes(x=days, ymin=mean-se, ymax=mean+se), width=0.4, colour="red", alpha=0.9, size=1.3) +
   geom_errorbar(aes(x=days, ymin=mean-ci, ymax=mean+ci), width=0.4, colour="black", alpha=0.9, size=1.3) +
   geom_text(aes(x=days, y=mean+ci+100, label=label,), position=position_dodge(0.9), vjust=1, size=7) +
@@ -156,7 +156,7 @@ CE_meanse<-data.frame(
 CE_meanse$ci<-CE_meanse$se*1.96
 
 CEp<-ggplot(CE_meanse) +
-  geom_bar(aes(x=days, y=mean), colour="black", fill="#3C5941", stat="identity", alpha=0.7) +
+  geom_bar(aes(x=days, y=mean), colour="black", fill="#14505C", stat="identity", alpha=0.7) +
   #geom_errorbar(aes(x=days, ymin=mean-se, ymax=mean+se), width=0.4, colour="red", alpha=0.9, size=1.3) +
   geom_errorbar(aes(x=days, ymin=mean-ci, ymax=mean+ci), width=0.4, colour="black", alpha=0.9, size=1.3) +
   geom_text(aes(x=days, y=mean+ci+100, label=label,), position=position_dodge(0.9), vjust=1, size=7) +
@@ -195,7 +195,7 @@ SE_meanse<-data.frame(
 SE_meanse$ci<-SE_meanse$se*1.96
 
 SEp<-ggplot(SE_meanse) +
-  geom_bar(aes(x=days, y=mean), colour="black", fill="#3C5941", stat="identity", alpha=0.7) +
+  geom_bar(aes(x=days, y=mean), colour="black", fill="#14505C", stat="identity", alpha=0.7) +
   #geom_errorbar(aes(x=days, ymin=mean-se, ymax=mean+se), width=0.4, colour="red", alpha=0.9, size=1.3) +
   geom_errorbar(aes(x=days, ymin=mean-ci, ymax=mean+ci), width=0.4, colour="black", alpha=0.9, size=1.3) +
   geom_text(aes(x=days, y=mean+ci+100, label=label,), position=position_dodge(0.9), vjust=1, size=7) +
