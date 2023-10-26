@@ -43,6 +43,7 @@ PlotNE <- ggplot(NE_data, aes(x = Days, y = NE)) +
                geom="pointrange", color = "red")+
   theme_classic() +
   labs(x="Days", y="NE") 
+leveneTest(NE ~ Days, data=NE_data)
 
 PlotCE <- ggplot(NE_data, aes(x = Days, y = CE)) + 
   geom_jitter(position=position_jitter(0.2)) + 
@@ -50,6 +51,7 @@ PlotCE <- ggplot(NE_data, aes(x = Days, y = CE)) +
                geom="pointrange", color = "red")+
   theme_classic() +
   labs(x="Days", y="NE")
+leveneTest(CE ~ Days, data=NE_data)
 
 PlotSE <- ggplot(NE_data, aes(x = Days, y = SE)) + 
   geom_jitter(position=position_jitter(0.2)) + 
@@ -57,13 +59,14 @@ PlotSE <- ggplot(NE_data, aes(x = Days, y = SE)) +
                geom="pointrange", color = "red")+
   theme_classic() +
   labs(x="Days", y="NE")
+leveneTest(SE ~ Days, data=NE_data)
 
 #mean_sdl computes the mean plus or minus a constant times the standard deviation 
 #(here the constant (mult) =1), so we see mean + standard deviation in Red
-#We can clearly see that the variance of NE increases over time 
+#We can clearly see that the variance of NE, CE and SE increases over time 
 ```
 
-Since the variance of NE increases over time, we decided to use the function nlme::lme to make our ANOVAs, because the function allows to weight the variance by days. 
+Since the variance of NE, CE, SE increases over time (heteroscedasticity in the residuals), we decided to use the function nlme::lme to make our ANOVAs, because the function allows to weight the variance by days. 
 
 The class pdMat, which represent positive-definite matrices, is used to represent variance-covariance matrices of random effects. 
 We have have two blocks in the random effects variance-covariance matrix: one for Composition, and one for Block
@@ -107,17 +110,29 @@ qqline(resid(modNE,type="pearson"))
 
 ##PLOT
 # I use the Tofino color palette from hcl.colors
-hcl.colors(5, palette="BluGrn")
+hcl.colors(4, palette="Blue-Yellow")
 
+mean<-as.vector(c(mean(NE_data[NE_data$Days==0, ]$NE), mean(NE_data[NE_data$Days==20, ]$NE), mean(NE_data[NE_data$Days==40, ]$NE), mean(NE_data[NE_data$Days==60, ]$NE)))
+
+se<-as.vector(c(sd(NE_data[NE_data$Days==0, ]$NE)/sqrt(length(NE_data[NE_data$Days==0, ]$NE)), sd(NE_data[NE_data$Days==20, ]$NE)/sqrt(length(NE_data[NE_data$Days==20, ]$NE)), sd(NE_data[NE_data$Days==40, ]$NE)/sqrt(length(NE_data[NE_data$Days==40, ]$NE)), sd(NE_data[NE_data$Days==60, ]$NE)/sqrt(length(NE_data[NE_data$Days==60, ]$NE))))
+                                                                                                                                      
 NE_meanse<-data.frame(
   days=c("0", "20", "40", "60"),
-  mean=as.vector(summary(modNE)$tTable[,1]),
-  se=as.vector(summary(modNE)$tTable[,2]),
+  mean=mean,
+  se=se,
   label=c("a", "b", "c", "c"))
 NE_meanse$ci<-NE_meanse$se*1.96
 
+NE_meanse2<-data.frame(
+  days=c("0", "20", "40", "60"),
+  mean=as.vector(summary(modNE)$tTable[,1]) + as.vector(c(0, rep(0.03493554, 3))),
+  se=as.vector(summary(modNE)$tTable[,2]),
+  label=c("a", "b", "c", "c"))
+
+NE_meanse2$ci<-NE_meanse2$se*1.96
+
 NEp<-ggplot(NE_meanse) +
-  geom_bar(aes(x=days, y=mean), colour="black", fill="#14505C", stat="identity", alpha=0.7) +
+  geom_bar(aes(x=days, y=mean), colour="black", fill="#2D3184", stat="identity", alpha=0.7) +
   #geom_errorbar(aes(x=days, ymin=mean-se, ymax=mean+se), width=0.4, colour="red", alpha=0.9, size=1.3) +
   geom_errorbar(aes(x=days, ymin=mean-ci, ymax=mean+ci), width=0.4, colour="black", alpha=0.9, size=1.3) +
   geom_text(aes(x=days, y=mean+ci+100, label=label,), position=position_dodge(0.9), vjust=1, size=7) +
@@ -125,6 +140,19 @@ NEp<-ggplot(NE_meanse) +
   theme(text=element_text(size=15), plot.title=element_text(vjust=2), panel.grid.major.y = element_line( size=.1, color="black" )) +
   labs(x="Days of growth", y="NE", title="Net biodiversity effect", pch=8) +
   scale_y_continuous(limits=c(0, 1000), breaks=seq(0, 1000, by=200)) 
+
+NEp2<-ggplot(NE_meanse2) +
+  geom_bar(aes(x=days, y=mean), colour="black", fill="#2D3184", stat="identity", alpha=0.7) +
+  #geom_errorbar(aes(x=days, ymin=mean-se, ymax=mean+se), width=0.4, colour="red", alpha=0.9, size=1.3) +
+  geom_errorbar(aes(x=days, ymin=mean-ci, ymax=mean+ci), width=0.4, colour="black", alpha=0.9, size=1.3) +
+  geom_text(aes(x=days, y=mean+ci+100, label=label,), position=position_dodge(0.9), vjust=1, size=7) +
+  theme_classic() + 
+  theme(text=element_text(size=15), plot.title=element_text(vjust=2), panel.grid.major.y = element_line( size=.1, color="black" )) +
+  labs(x="Days of growth", y="NE", title="Net biodiversity effect", pch=8) +
+  scale_y_continuous(limits=c(0, 1000), breaks=seq(0, 1000, by=200)) 
+
+plotdaniel<-ggarrange(tableGrob(NE_meanse), tableGrob(NE_meanse2), NEp, NEp2, ncol=2, nrow=2)
+annotate_figure(plotdaniel, top=text("gauche: prédictions du modèle; droite: prédictions calculées à partir des données seulement"))
 ```
 ### ANOVA 2 : complementarity effect through time
 ```{r}
@@ -156,7 +184,7 @@ CE_meanse<-data.frame(
 CE_meanse$ci<-CE_meanse$se*1.96
 
 CEp<-ggplot(CE_meanse) +
-  geom_bar(aes(x=days, y=mean), colour="black", fill="#14505C", stat="identity", alpha=0.7) +
+  geom_bar(aes(x=days, y=mean), colour="black", fill="#2D3184", stat="identity", alpha=0.7) +
   #geom_errorbar(aes(x=days, ymin=mean-se, ymax=mean+se), width=0.4, colour="red", alpha=0.9, size=1.3) +
   geom_errorbar(aes(x=days, ymin=mean-ci, ymax=mean+ci), width=0.4, colour="black", alpha=0.9, size=1.3) +
   geom_text(aes(x=days, y=mean+ci+100, label=label,), position=position_dodge(0.9), vjust=1, size=7) +
@@ -195,7 +223,7 @@ SE_meanse<-data.frame(
 SE_meanse$ci<-SE_meanse$se*1.96
 
 SEp<-ggplot(SE_meanse) +
-  geom_bar(aes(x=days, y=mean), colour="black", fill="#14505C", stat="identity", alpha=0.7) +
+  geom_bar(aes(x=days, y=mean), colour="black", fill="#2D3184", stat="identity", alpha=0.7) +
   #geom_errorbar(aes(x=days, ymin=mean-se, ymax=mean+se), width=0.4, colour="red", alpha=0.9, size=1.3) +
   geom_errorbar(aes(x=days, ymin=mean-ci, ymax=mean+ci), width=0.4, colour="black", alpha=0.9, size=1.3) +
   geom_text(aes(x=days, y=mean+ci+100, label=label,), position=position_dodge(0.9), vjust=1, size=7) +

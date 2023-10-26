@@ -17,6 +17,8 @@ library(nortest)
 library(nlme)
 library(emmeans)
 
+data<-Alex_AnneData
+
 data <-data [,-1]
 data$Bloc <- as.factor (data$Bloc)
 data$Jours <- as.factor (data$Jours)

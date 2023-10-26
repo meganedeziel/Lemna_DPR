@@ -11,6 +11,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r}
 library("here")
 library("tidyverse")
+library("nlme")
 This script will produce Figure 2: The relative contribution of species to the average biomass on day 60 of the experiment
 ```{r}
 Biom_data<-read.csv(here("data", "Relativebiomass_data.csv"), sep=";")
@@ -26,19 +27,167 @@ Biom_data<-Biom_data %>%
                 as.factor)) %>%
   group_by(Mixture)
   mutate(Biomass_tot_per_mix<-)
-```
-
-```{r}
-Plot_data<-Biom_data[Biom_data$Days==60,] %>%
-  group_by(Mixture, Block) %>% #sum per Mixture per Block
-  mutate(sum_finbiomass=sum(Final_relbiomass)) %>% #i now have the total biomass per culture
-  ungroup() %>%
-  group_by(Mixture) %>% #to calculate mean per mixture, considering the 3 blocks
   
-  group_by(Mixture) %>%
-  mutate(mean_finbiomass_per_mix=mean(Final_relbiomass))
-ggplot(Biom_data, aes(fill=Species, y=Final_relbiomass, x=Mixture)) +
-    geom_bar(position="stack", stat="identity")
 
+#Net effect, CE, SE 
+NE_data<-read.csv(here("data", "NE_data.csv"), sep=";")
+
+NE_data<-NE_data[, -1]
+NE_data<-NE_data %>%
+  mutate(across(c("Composition", "Block", "Days"), 
+                as.factor)) #transform Composition, Block, Days as factor
 ```
+
+ANOVAs Biom, NE, CE, SE ~ Mixture
+```{r}
+### Biom
+Biom60<-Biom_data[Biom_data$Days==60, ] %>%
+  group_by(Block, Mixture) %>%
+  mutate(tot_biomass_per_blockmix=sum(Final_relbiomass)) %>%
+  select(., 2, 3, 11) %>%
+  ungroup() %>%
+  unique
+
+PlotBiom60 <- ggplot(Biom60, aes(x = Mixture, y = tot_biomass_per_blockmix)) + 
+  geom_jitter(position=position_jitter(0.2)) + 
+  stat_summary(fun.data="mean_sdl",  fun.args = list(mult=1), 
+               geom="pointrange", color = "red")+
+  theme_classic() +
+  labs(x="Mixture", y="Final biomass") 
+leveneTest(tot_biomass_per_blockmix ~ Mixture, data=Biom60)
+
+Biom60$dummy<-factor(1)
+
+modBiom <- lme(tot_biomass_per_blockmix ~ Mixture,
+              random=list(dummy=pdBlocked(list(pdIdent(~Mixture-1), 
+                                               pdIdent(~Block-1)))),
+              data=Biom60,
+              #weights=varIdent(form=~ 1 | Mixture),
+              method="REML", 
+              control=list(msMaxIter=1000,
+                             msMaxEval=1000))
+
+modBiomlmer<-lmer(tot_biomass_per_blockmix ~ Mixture + (1|Mixture) + (1|Block), data=Biom60)
+
+anova(modBiom)
+summary(modBiom)
+contrastBiom <- emmeans(modBiom, "Mixture")
+pairs(contrastBiom)
+
+par(mfrow=c(1,2))
+plot(fitted(modBiom), resid(modBiom,type="pearson"))
+qqnorm(resid(modBiom,type="pearson"))
+qqline(resid(modBiom,type="pearson"))
+
+### NE
+NE60<-NE_data[NE_data$Days==60, ] 
+
+PlotNE60 <- ggplot(NE60, aes(x = Composition, y = NE)) + 
+  geom_jitter(position=position_jitter(0.2)) + 
+  stat_summary(fun.data="mean_sdl",  fun.args = list(mult=1), 
+               geom="pointrange", color = "red")+
+  theme_classic() +
+  labs(x="Mixture", y="NE 60") 
+
+leveneTest(NE ~ Composition,
+  data = NE60
+)
+
+NE60$dummy<-factor(1)
+
+modNE60 <- lme(NE ~ Composition,
+              random=list(dummy=pdBlocked(list(pdIdent(~Composition-1), 
+                                               pdIdent(~Block-1)))),
+              data=NE60,
+              weights=varIdent(form=~ 1 | Composition),
+              method="REML", 
+              control=list(msMaxIter=1000,
+                             msMaxEval=1000))
+
+res_aov <- aov(NE ~ Composition,
+  data = NE60
+)
+
+par(mfrow = c(1, 2)) # combine plots
+
+# histogram
+hist(res_aov$residuals)
+
+# QQ-plot
+library(car)
+qqPlot(res_aov$residuals,
+  id = FALSE # id = FALSE to remove point identification
+)
+
+shapiro.test(res_aov$residuals)
+
+anova(modNE60)
+summary(modNE60)
+contrastNE60 <- emmeans(modNE60, "Composition")
+pairs(contrastNE60)
+
+par(mfrow=c(1,2))
+plot(fitted(modBiom), resid(modBiom,type="pearson"))
+qqnorm(resid(modBiom,type="pearson"))
+qqline(resid(modBiom,type="pearson"))
+```
+
+### ANOVA: NE Day 60 ~ Species in mixture
+```{r}
+#Merge biomass and NE data
+colnames(Biom_data)[3]<-"Composition"
+Species_data<-merge(Biom_data, NE_data, by=c("Block", "Composition", "Days"))
+```
+
+### PLOT BIOMASS
+```{r}
+#Mean biomass per species data
+Plot_species<-Biom_data[Biom_data$Days==60,] %>%
+  group_by(Mixture, Species) %>%
+  mutate(mean_fin_relbiomass=mean(Final_relbiomass)) %>%
+  mutate(standard_error=sd(Final_relbiomass)/sqrt(n())) %>% #calculates standard error in biomass of each species composing the mixtures
+  select(., 3:5, 11, 12) %>%
+  ungroup() %>%
+  unique() 
+
+
+Plot_data$Mixture<-fct_relevel(Plot_data$Mixture, c("Lm", "Sp", "Wc", "Lt", "LmSp", "LmWc", "LmLt", "SpWc", "SpLt", "WcLt", "LmSpWc", "LmSpLt", "SpWcLt", "LmWcLt", "LmSpWcLt"))
+
+#Total biomass & standard error data
+Errorbar_data_totalbiom<-Biom_data[Biom_data$Days==60,] %>%
+  group_by(Block, Mixture) %>%
+  mutate(tot_biomass_per_blockmix=sum(Final_relbiomass)) %>%
+  ungroup() %>%
+  select(., 2, 3, 11) %>%
+  unique() %>%
+  group_by(Mixture) %>%
+  mutate(mean_tot_biomass=mean(tot_biomass_per_blockmix)) %>%
+  mutate(sd_tot_biomass=sd(tot_biomass_per_blockmix)/sqrt(n())) %>%
+  select(., 2, 4, 5) %>%
+  unique() %>%
+  ungroup
+
+#Significance in net effect data
+NE60$significance<-ifelse(NE60$NE>=1, "s", "ns")
+
+Plotdat_fin<-merge(Plot_data, Errorbar_data_totalbiom, by="Mixture") %>%
+  unique()
+
+p<-ggplot(data=Plotdat_fin, aes(fill=Species, y=mean_fin_relbiomass, x=Mixture)) +
+    geom_bar(position="stack", stat="identity", colour="black") +
+    scale_fill_manual(values=alpha(c("#2D3184", "#32AAB5", "#B3E7C5", "#F3F1E4"), 0.7)) +
+    theme_classic() +
+    theme(text=element_text(size=15), axis.text.x = element_text(size = 13, angle = 60, hjust=1), panel.grid.major.y = element_line( size=.1, color="black")) +
+    labs(x="Composition", y="Average biomass (mg)", pch=8) + 
+    scale_y_continuous(limits=c(0, 3600), breaks=seq(0, 3600, by=400)) +
+    geom_errorbar(aes(x=Mixture, ymin=mean_tot_biomass-sd_tot_biomass, ymax=mean_tot_biomass+sd_tot_biomass), width=0.4, colour="black", alpha=0.9, size=1.3) +
+    geom_point(aes(x=Mixture, y=mean_tot_biomass), size=3) +
+    geom_text(aes(label=ifelse()))
+    guides(fill = guide_legend(override.aes = list(shape = NA)))  #removes the points in the legend
+
+
+theme(text=element_text(size=15), plot.title=element_text(vjust=2)
+```
+
+
 
