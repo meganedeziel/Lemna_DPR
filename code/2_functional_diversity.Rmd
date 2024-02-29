@@ -10,14 +10,14 @@ knitr::opts_chunk$set(echo = TRUE, message=FALSE)
 ```
 
 This code calculates Fundamental and Realized Functional diversity 
-considering leaf area
+considering leaf area and runs models 
 
 ```{r, message=FALSE, warning=FALSE}
 library(here)
 library(tidyverse)
 library(FD)
 library(nlme)
-library(rsq)
+library(MuMIn)
 library(ggpubr)
 ```
 
@@ -38,61 +38,85 @@ NE_data$dummy<-factor(1)
 NE60<-NE_data[NE_data$Days==60,]
 ```
 
-### Graphs
+### Graphs : Difference in leaf area of target species between Day 0 and Day 60 in every mixture
 ```{r}
 Lm_la_data<-Biom_data[Biom_data$Species=="Lm" & Biom_data$Days %in% c(0, 60), ] %>%
   select(., Block, Mixture, Days, Mean_LA) %>%
   pivot_wider(., names_from=Days, values_from = Mean_LA)
 Lm_la_data$difference<-Lm_la_data$'60'-Lm_la_data$'0'
 Lm_la_data$otherspecies<-rep(c("Lm", "Sp", "Wc", "Lt", "SpWc", "SpLt", "WcLt", "SpWcLt"), 3)
+Lm_la_data$otherspecies<-fct_relevel(Lm_la_data$otherspecies, c("Lm", "Sp", "Wc", "Lt", "SpWc", "SpLt", "WcLt", "SpWcLt"))
 
 Lm_boxplot<-
   ggplot(Lm_la_data, aes(x = otherspecies, y = difference)) + 
   geom_boxplot(fill="#2D3184", alpha=0.7) +
   geom_point() +
-  ggtitle("Lm")
+  ggtitle("Lm") +
+  theme_classic() +
+  theme(axis.title.x=element_blank(),
+        axis.title.y=element_blank(),
+        text=element_text(size=15), plot.title=element_text(vjust=2), panel.grid.major.y = element_line(linewidth=.1, color="black" ))
 
 Sp_la_data<-Biom_data[Biom_data$Species=="Sp" & Biom_data$Days %in% c(0, 60), ] %>%
   select(., Block, Mixture, Days, Mean_LA) %>%
   pivot_wider(., names_from=Days, values_from = Mean_LA)
 Sp_la_data$difference<-Sp_la_data$'60'-Sp_la_data$'0'
 Sp_la_data$otherspecies<-rep(c("Sp", "Lm", "Wc", "Lt", "LmWc", "LmLt", "WcLt", "LmWcLt"), 3)
+Sp_la_data$otherspecies<-fct_relevel(Sp_la_data$otherspecies, c("Sp", "Lm", "Wc", "Lt", "LmWc", "LmLt", "WcLt", "LmWcLt"))
 
 Sp_boxplot<-
   ggplot(Sp_la_data, aes(x = otherspecies, y = difference)) + 
   geom_boxplot(fill="#2D3184", alpha=0.7) +
   geom_point() +
-  ggtitle("Sp")
+  ggtitle("Sp") +
+  theme_classic() +
+  theme(axis.title.x=element_blank(),
+        axis.title.y=element_blank(),
+        text=element_text(size=15), plot.title=element_text(vjust=2), panel.grid.major.y = element_line(linewidth=.1, color="black" ))
 
 Wc_la_data<-Biom_data[Biom_data$Species=="Wc" & Biom_data$Days %in% c(0, 60), ] %>%
   select(., Block, Mixture, Days, Mean_LA) %>%
   pivot_wider(., names_from=Days, values_from = Mean_LA)
 Wc_la_data$difference<-Wc_la_data$'60'-Wc_la_data$'0'
 Wc_la_data$otherspecies<-rep(c("Wc", "Lm", "Sp", "Lt", "LmSp", "LmLt", "SpLt", "LmSpLt"), 3)
+Wc_la_data$otherspecies<-fct_relevel(Wc_la_data$otherspecies, c("Wc", "Lm", "Sp", "Lt", "LmSp", "LmLt", "SpLt", "LmSpLt"))
 
 Wc_boxplot<-
   ggplot(Wc_la_data, aes(x = otherspecies, y = difference)) + 
   geom_boxplot(fill="#2D3184", alpha=0.7) +
   geom_point() +
-  ggtitle("Wc")
+  ggtitle("Wc") +
+  theme_classic() +
+  theme(axis.title.x=element_blank(),
+        axis.title.y=element_blank(),
+        text=element_text(size=15), plot.title=element_text(vjust=2), panel.grid.major.y = element_line(linewidth=.1, color="black" ))
 
 Lt_la_data<-Biom_data[Biom_data$Species=="Lt" & Biom_data$Days %in% c(0, 60), ] %>%
   select(., Block, Mixture, Days, Mean_LA) %>%
   pivot_wider(., names_from=Days, values_from = Mean_LA)
 Lt_la_data$difference<-Lt_la_data$'60'-Lt_la_data$'0'
 Lt_la_data$otherspecies<-rep(c("Lt", "Lm", "Sp", "Wc", "LmSp", "LmWc", "SpWc", "LmSpWc"), 3)
+Lt_la_data$otherspecies<-fct_relevel(Lt_la_data$otherspecies, c("Lt", "Lm", "Sp", "Wc", "LmSp", "LmWc", "SpWc", "LmSpWc"))
+
 
 Lt_boxplot<-
   ggplot(Lt_la_data, aes(x = otherspecies, y = difference)) + 
-  geom_boxplot(fill="#2D3184", alpha=0.7) +
+  geom_boxplot(fill="#2D3184", alpha=0.7) + #aes(middle = mean(difference))
   geom_point() +
-  ggtitle("Lt")
+  ggtitle("Lt") +
+  theme_classic() +
+  theme(axis.title.x=element_blank(),
+        axis.title.y=element_blank(),
+        text=element_text(size=15), plot.title=element_text(vjust=2), panel.grid.major.y = element_line(linewidth=.1, color="black" ))
 
 
-ggarrange(Lm_boxplot, Sp_boxplot, Wc_boxplot, Lt_boxplot)
+difference<-ggarrange(Lm_boxplot, Sp_boxplot, Wc_boxplot, Lt_boxplot)
+annotate_figure(difference,
+                left=text_grob(expression("Difference in leaf area (mm"^2*")"), rot=90, size=15))
 ```
+
 ### Functional diversity calculations
-#### Abundance matrices
+#### Abundance matrices for further calculations
 ```{r}
 Biom_data$MixBlock<-paste(Biom_data$Mixture, Biom_data$Block, sep="_")
 Biom_data$MixBlockSp<-paste(Biom_data$Species, Biom_data$Mixture, Biom_data$Block, sep="_")
@@ -231,7 +255,7 @@ rfd<-rbind(rfd_Bl1, rfd_Bl2, rfd_Bl3)
 fd<-cbind(ffd, ffd60, ffd60_perblock, rfd)
 ```
 
-### Models
+### Models: Effect of functional diversity indices on NE and CE
 ```{r}
 fd_NE<-cbind(fd, NE60)
 
