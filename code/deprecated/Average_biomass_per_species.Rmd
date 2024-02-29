@@ -12,8 +12,11 @@ knitr::opts_chunk$set(echo = TRUE)
 library("here")
 library("tidyverse")
 library("nlme")
-This script will produce Figure 2: The relative contribution of species to the average biomass on day 60 of the experiment
-```{r}
+library("car")
+library("lme4")
+#This script will produce Figure 2: The relative contribution of species to the average biomass on day 60 of the experiment
+
+
 Biom_data<-read.csv(here("data", "Relativebiomass_data.csv"), sep=";")
 #info on data
 #individual mass : in mg
@@ -44,7 +47,7 @@ ANOVAs Biom, NE, CE, SE ~ Mixture
 Biom60<-Biom_data[Biom_data$Days==60, ] %>%
   group_by(Block, Mixture) %>%
   mutate(tot_biomass_per_blockmix=sum(Final_relbiomass)) %>%
-  select(., 2, 3, 11) %>%
+  dplyr::select(., 2, 3, 11) %>%
   ungroup() %>%
   unique
 
@@ -67,8 +70,18 @@ modBiom <- lme(tot_biomass_per_blockmix ~ Mixture,
               control=list(msMaxIter=1000,
                              msMaxEval=1000))
 
-modBiomlmer<-lmer(tot_biomass_per_blockmix ~ Mixture + (1|Mixture) + (1|Block), data=Biom60)
+modBiomnomix <- lme(tot_biomass_per_blockmix ~ Mixture,
+              random=list(dummy=pdIdent(~Block-1)),
+              data=Biom60,
+              #weights=varIdent(form=~ 1 | Mixture),
+              method="REML", 
+              control=list(msMaxIter=1000,
+                             msMaxEval=1000))
 
+modBiomlmer<-lmer(tot_biomass_per_blockmix ~ Mixture + (1|Block), data=Biom60)
+anova(modBiomlmer)
+contrastBiomlmer<-emmeans(modBiomlmer, "Mixture")
+pairs(modBiomlmer)
 anova(modBiom)
 summary(modBiom)
 contrastBiom <- emmeans(modBiom, "Mixture")
@@ -78,7 +91,10 @@ par(mfrow=c(1,2))
 plot(fitted(modBiom), resid(modBiom,type="pearson"))
 qqnorm(resid(modBiom,type="pearson"))
 qqline(resid(modBiom,type="pearson"))
+```
 
+
+```{r}
 ### NE
 NE60<-NE_data[NE_data$Days==60, ] 
 
@@ -145,8 +161,8 @@ Species_data<-merge(Biom_data, NE_data, by=c("Block", "Composition", "Days"))
 Plot_species<-Biom_data[Biom_data$Days==60,] %>%
   group_by(Mixture, Species) %>%
   mutate(mean_fin_relbiomass=mean(Final_relbiomass)) %>%
-  mutate(standard_error=sd(Final_relbiomass)/sqrt(n())) %>% #calculates standard error in biomass of each species composing the mixtures
-  select(., 3:5, 11, 12) %>%
+  mutate(standard_error=sd(Final_relbiomass)/sqrt(n())) %>%  #calculates standard error in biomass of each species composing the mixtures
+  dplyr::select(., 3:5, 11, 12) %>%
   ungroup() %>%
   unique() 
 
@@ -158,12 +174,12 @@ Errorbar_data_totalbiom<-Biom_data[Biom_data$Days==60,] %>%
   group_by(Block, Mixture) %>%
   mutate(tot_biomass_per_blockmix=sum(Final_relbiomass)) %>%
   ungroup() %>%
-  select(., 2, 3, 11) %>%
+  dplyr::select(., 2, 3, 11) %>%
   unique() %>%
   group_by(Mixture) %>%
   mutate(mean_tot_biomass=mean(tot_biomass_per_blockmix)) %>%
   mutate(sd_tot_biomass=sd(tot_biomass_per_blockmix)/sqrt(n())) %>%
-  select(., 2, 4, 5) %>%
+  dplyr::select(., 2, 4, 5) %>%
   unique() %>%
   ungroup
 

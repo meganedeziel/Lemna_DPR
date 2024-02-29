@@ -1,0 +1,128 @@
+---
+title: "4. Two-tailed t-tests"
+author: "meganedeziel"
+date: "2024-01-25"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+This code aims to test the hypothesis that Net effect is different (less than OR greater than) from 0 in each of the mixtures at different levels of the factor Days.
+
+### Package loading
+```{r, message=FALSE}
+library(here)
+library(tidyverse)
+library(rstatix)
+```
+
+### Data importation 
+```{r}
+NE_data<-read.csv(here("data", "NE_data.csv"), sep=";")
+```
+
+Null hypothesis: There is no difference between the sample mean and the hypothesized population mean (0)
+Alternative hypothesis: Diversity has a significant effect on net effect (NE != 0)
+### Tests on NE
+```{r}
+NE60<-NE_data[NE_data$Days=="60",] %>%
+  group_by(Composition) %>%
+  t_test(NE ~ 0) %>%
+  add_significance()
+NE60
+meanNE60<-NE_data[NE_data$Days=="60",] %>%
+  group_by(Composition) %>%
+  mutate(mean_60=mean(NE)) %>%
+  unique()
+
+NE40<-NE_data[NE_data$Days=="40",] %>%
+  group_by(Composition) %>%
+  t_test(NE ~ 0) %>%
+  add_significance()
+NE40
+meanNE40<-NE_data[NE_data$Days=="40",] %>%
+  group_by(Composition) %>%
+  mutate(mean_40=mean(NE)) %>%
+  unique()
+
+NE20<-NE_data[NE_data$Days=="20",] %>%
+  group_by(Composition) %>%
+  t_test(NE ~ 0) %>%
+  add_significance()
+NE20
+meanNE20<-NE_data[NE_data$Days=="20",] %>%
+  group_by(Composition) %>%
+  mutate(mean_20=mean(NE)) %>%
+  unique()
+```
+
+### Tests on CE
+```{r}
+CE60<-NE_data[NE_data$Days=="60",] %>%
+  group_by(Composition) %>%
+  t_test(CE ~ 0) %>%
+  add_significance()
+CE60
+meanCE60<-NE_data[NE_data$Days=="60",] %>%
+  group_by(Composition) %>%
+  mutate(mean_60=mean(CE)) %>%
+  unique()
+
+CE40<-NE_data[NE_data$Days=="40",] %>%
+  group_by(Composition) %>%
+  t_test(CE ~ 0) %>%
+  add_significance()
+CE40
+meanCE40<-NE_data[NE_data$Days=="40",] %>%
+  group_by(Composition) %>%
+  mutate(mean_40=mean(CE)) %>%
+  unique()
+
+CE20<-NE_data[NE_data$Days=="20",] %>%
+  group_by(Composition) %>%
+  t_test(CE ~ 0) %>%
+  add_significance()
+CE20
+meanCE20<-NE_data[NE_data$Days=="20",] %>%
+  group_by(Composition) %>%
+  mutate(mean_20=mean(CE)) %>%
+  unique()
+```
+
+### Tests on SE
+```{r}
+SE60<-NE_data[NE_data$Days=="60",] %>%
+  group_by(Composition) %>%
+  t_test(SE ~ 0) %>%
+  add_significance()
+SE60
+meanSE60<-NE_data[NE_data$Days=="60",] %>%
+  group_by(Composition) %>%
+  mutate(mean_60=mean(CE)) %>%
+  unique()
+
+SE40<-NE_data[NE_data$Days=="40",] %>%
+  group_by(Composition) %>%
+  t_test(SE ~ 0) %>%
+  add_significance()
+SE40
+meanSE40<-NE_data[NE_data$Days=="40",] %>%
+  group_by(Composition) %>%
+  mutate(mean_40=mean(SE)) %>%
+  unique()
+
+SE20<-NE_data[NE_data$Days=="20",] %>%
+  group_by(Composition) %>%
+  t_test(SE ~ 0) %>%
+  add_significance()
+SE20
+meanSE20<-NE_data[NE_data$Days=="20",] %>%
+  group_by(Composition) %>%
+  mutate(mean_20=mean(SE)) %>%
+  unique()
+```
+
+
+

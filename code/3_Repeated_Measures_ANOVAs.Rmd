@@ -1,0 +1,154 @@
+---
+title: "3. Repeated Measures ANOVAs"
+author: "meganedeziel"
+date: "2024-01-10"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r, message=FALSE}
+library(here)
+library(tidyverse)
+library(rstatix)
+library(nlme)
+library(emmeans)
+library(multcomp)
+```
+
+# Does communities' NE, CE and SE change over time 
+```{r}
+#Net effect, CE, SE 
+NE_data<-read.csv(here("data", "NE_data.csv"), sep=";")
+str(NE_data)
+
+NE_data<-NE_data[, -1]
+NE_data<-NE_data %>%
+  mutate(across(c("Composition", "Block", "Days"), 
+                as.factor)) #transform Composition, Block, Days as factor
+```
+
+### Do we have outliers in the data? 
+```{r}
+NE_data %>%
+  group_by(Days) %>%
+  identify_outliers(NE)
+
+NE_data %>%
+  group_by(Days) %>%
+  identify_outliers(CE)
+
+NE_data %>%
+  group_by(Days) %>%
+  identify_outliers(SE)
+```
+No extreme outliers
+
+### Test normality assumption
+```{r}
+NE_data %>%
+  group_by(Composition, Days) %>%
+  shapiro_test(NE) %>%
+  ungroup()
+
+NE_data[NE_data$CE!=0,] %>%
+  group_by(Composition, Days) %>%
+  shapiro_test(CE)
+
+NE_data %>%
+  group_by(Composition, Days) %>%
+  shapiro_test(SE)
+
+#All response vars follow a normal distribution when considered by every level of the factor Days
+```
+
+### Test
+```{r}
+#Compute many repeated measures ANOVAs, one per different Composition for NE, CE and SE seperately 
+NE_Anova <- NE_data %>%
+  group_by(Composition) %>%
+  anova_test(dv = NE, wid = Block, within = Days) %>%
+  adjust_pvalue(method="fdr") %>%
+  add_significance("p.adj") %>%
+  get_anova_table()
+data.frame(NE_Anova)
+
+result<-anova_test(data=NE_data[NE_data$Composition=="LmLt", ], dv = NE, wid = Block, within = Days)
+
+CE_Anova <- NE_data %>%
+  group_by(Composition) %>%
+  anova_test(dv = CE, wid = Block, within = Days) %>%
+  adjust_pvalue(method="fdr") %>%
+  add_significance("p.adj") %>%
+  get_anova_table()
+data.frame(CE_Anova)
+
+SE_Anova <- NE_data %>%
+  group_by(Composition) %>%
+  anova_test(dv = SE, wid = Block, within = Days) %>%
+  adjust_pvalue(method="fdr") %>%
+  add_significance("p.adj") %>%
+  get_anova_table()
+data.frame(SE_Anova)
+```
+
+### Plot the relative contribution of species to the average biomass on day 60 of the experiment
+```{r}
+Biom_data<-read.csv(here("data", "Relativebiomass_data.csv"), sep=";")
+#info on data
+#individual mass : in mg
+#mean LA = mean leaf area : in mg
+#mean SLA = mean specific leaf area : in mm2/mg
+#initial relbiomass : in mg
+#final relbiomass: in mg
+
+#Mean biomass per species data
+Plot_species<-Biom_data[Biom_data$Days==60,] %>%
+  group_by(Mixture, Species) %>%
+  mutate(mean_fin_relbiomass=mean(Final_relbiomass)) %>%
+  mutate(standard_error=sd(Final_relbiomass)/sqrt(n())) %>%  #calculates standard error in biomass of each species composing the mixtures
+  dplyr::select(., 3:5, 11, 12) %>%
+  ungroup() %>%
+  unique() 
+
+Plot_species$Mixture<-fct_relevel(Plot_species$Mixture, c("Lm", "Sp", "Wc", "Lt", "LmSp", "LmWc", "LmLt", "SpWc", "SpLt", "WcLt", "LmSpWc", "LmSpLt", "SpWcLt", "LmWcLt", "LmSpWcLt"))
+
+#Total biomass & standard error data
+Errorbar_data_totalbiom<-Biom_data[Biom_data$Days==60,] %>%
+  group_by(Block, Mixture) %>%
+  mutate(tot_biomass_per_blockmix=sum(Final_relbiomass)) %>%
+  ungroup() %>%
+  dplyr::select(., 2, 3, 11) %>%
+  unique() %>%
+  group_by(Mixture) %>%
+  mutate(mean_tot_biomass=mean(tot_biomass_per_blockmix)) %>%
+  mutate(sd_tot_biomass=sd(tot_biomass_per_blockmix)/sqrt(n())) %>%
+  dplyr::select(., 2, 4, 5) %>%
+  unique() %>%
+  ungroup
+
+#Significance in net effect data
+Plotdat_fin<-merge(Plot_species, Errorbar_data_totalbiom, by="Mixture") %>%
+  unique()
+Plotdat_fin$mean_errorbar_sum<-Plotdat_fin$mean_tot_biomass+Plotdat_fin$sd_tot_biomass
+
+p<-ggplot(data=Plotdat_fin, aes(fill=Species, y=mean_fin_relbiomass, x=Mixture)) +
+    geom_bar(position="stack", stat="identity", colour="black") +
+    scale_fill_manual(values=alpha(c("#2D3184", "#32AAB5", "#B3E7C5", "#F3F1E4"), 0.7)) +
+    theme_classic() +
+    theme(text=element_text(size=15), axis.text.x = element_text(size = 13, angle = 60, hjust=1), panel.grid.major.y = element_line( size=.1, color="black")) +
+    labs(x="Mixture", y="Average biomass (mg)", pch=8) + 
+    scale_y_continuous(limits=c(0, 3600), breaks=seq(0, 3600, by=400)) +
+    geom_errorbar(aes(x=Mixture, ymin=mean_tot_biomass-sd_tot_biomass, ymax=mean_tot_biomass+sd_tot_biomass), width=0.4, colour="black", alpha=0.9, size=1.3)
+  # Add stars based on significance levels; LmLt, SpWc, SpLt, WcLt, LmSpLt, SpWcLt, LmWcLt, LmSpWcLt
+  #annotate(
+    #"text",
+    #x = c(7, 8, 9, 10, 12, 13, 14, 15),  # x-coordinates where stars should be placed
+    #y = c(3105.0551, 2668.9939, 2656.2304, 3251.6792, 2981.5882, 2668.1739, 3191.0420, 2887.1803),
+    #label = c("***", "*", "***", "***", "***", "**", "**", "*"),  # significance labels
+    #size = 6,  # adjust the size of the stars
+    #color = "black"  # color of the stars
+  #)
+p
+```
+

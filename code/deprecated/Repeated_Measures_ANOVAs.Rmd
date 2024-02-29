@@ -1,0 +1,90 @@
+---
+title: "2.Repeated_Measures_ANOVAs"
+author: "meganedeziel"
+date: "2024-01-10"
+output: html_document
+---
+
+```{r}
+library(here)
+library(tidyverse)
+library(rstatix)
+library(nlme)
+library(emmeans)
+library(multcomp)
+```
+
+# Does communities' NE, CE and SE change over time 
+```{r}
+#Net effect, CE, SE 
+NE_data<-read.csv(here("data", "NE_data.csv"), sep=";")
+str(NE_data)
+
+NE_data<-NE_data[, -1]
+NE_data<-NE_data %>%
+  mutate(across(c("Composition", "Block", "Days"), 
+                as.factor)) #transform Composition, Block, Days as factor
+```
+
+### Do we have outliers in the data? 
+```{r}
+NE_data %>%
+  group_by(Days) %>%
+  identify_outliers(NE)
+
+NE_data %>%
+  group_by(Days) %>%
+  identify_outliers(CE)
+
+NE_data %>%
+  group_by(Days) %>%
+  identify_outliers(SE)
+```
+No extreme outliers
+
+### Test normality assumption
+```{r}
+NE_data %>%
+  group_by(Composition, Days) %>%
+  shapiro_test(NE) %>%
+  ungroup()
+
+NE_data[NE_data$CE!=0,] %>%
+  group_by(Composition, Days) %>%
+  shapiro_test(CE)
+
+NE_data %>%
+  group_by(Composition, Days) %>%
+  shapiro_test(SE)
+
+#All response vars follow a normal distribution when considered by every level of the factor Days
+```
+
+### Test
+```{r}
+#Compute many repeated measures ANOVAs, one per different Composition for NE, CE and SE seperately 
+NE_Anova <- NE_data %>%
+  group_by(Composition) %>%
+  anova_test(dv = NE, wid = Block, within = Days) %>%
+  adjust_pvalue(method="fdr") %>%
+  add_significance("p.adj") %>%
+  get_anova_table()
+data.frame(NE_Anova)
+
+CE_Anova <- NE_data %>%
+  group_by(Composition) %>%
+  anova_test(dv = CE, wid = Block, within = Days) %>%
+  adjust_pvalue(method="fdr") %>%
+  add_significance("p.adj") %>%
+  get_anova_table()
+data.frame(CE_Anova)
+
+SE_Anova <- NE_data %>%
+  group_by(Composition) %>%
+  anova_test(dv = SE, wid = Block, within = Days) %>%
+  adjust_pvalue(method="fdr") %>%
+  add_significance("p.adj") %>%
+  get_anova_table()
+data.frame(SE_Anova)
+```
+

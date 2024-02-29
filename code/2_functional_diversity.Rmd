@@ -1,0 +1,347 @@
+---
+title: "2. Functional Diversity"
+author: "meganedeziel"
+date: "2024-02-06"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message=FALSE)
+```
+
+This code calculates Fundamental and Realized Functional diversity 
+considering leaf area
+
+```{r, message=FALSE, warning=FALSE}
+library(here)
+library(tidyverse)
+library(FD)
+library(nlme)
+library(rsq)
+library(ggpubr)
+```
+
+### Data importation
+```{r}
+#Trait data
+Biom_data<-read.csv(here("data", "Relativebiomass_data.csv"), sep=";")
+
+#Data on Net effect, CE, SE 
+NE_data<-read.csv(here("data", "NE_data.csv"), sep=";")
+
+#transform Composition, Block, Days as factor for further analyses
+NE_data<-NE_data[NE_data$Days!="0", -1]
+NE_data<-NE_data %>%
+  mutate(across(c("Composition", "Block", "Days"), 
+                as.factor)) 
+NE_data$dummy<-factor(1)
+NE60<-NE_data[NE_data$Days==60,]
+```
+
+### Graphs
+```{r}
+Lm_la_data<-Biom_data[Biom_data$Species=="Lm" & Biom_data$Days %in% c(0, 60), ] %>%
+  select(., Block, Mixture, Days, Mean_LA) %>%
+  pivot_wider(., names_from=Days, values_from = Mean_LA)
+Lm_la_data$difference<-Lm_la_data$'60'-Lm_la_data$'0'
+Lm_la_data$otherspecies<-rep(c("Lm", "Sp", "Wc", "Lt", "SpWc", "SpLt", "WcLt", "SpWcLt"), 3)
+
+Lm_boxplot<-
+  ggplot(Lm_la_data, aes(x = otherspecies, y = difference)) + 
+  geom_boxplot(fill="#2D3184", alpha=0.7) +
+  geom_point() +
+  ggtitle("Lm")
+
+Sp_la_data<-Biom_data[Biom_data$Species=="Sp" & Biom_data$Days %in% c(0, 60), ] %>%
+  select(., Block, Mixture, Days, Mean_LA) %>%
+  pivot_wider(., names_from=Days, values_from = Mean_LA)
+Sp_la_data$difference<-Sp_la_data$'60'-Sp_la_data$'0'
+Sp_la_data$otherspecies<-rep(c("Sp", "Lm", "Wc", "Lt", "LmWc", "LmLt", "WcLt", "LmWcLt"), 3)
+
+Sp_boxplot<-
+  ggplot(Sp_la_data, aes(x = otherspecies, y = difference)) + 
+  geom_boxplot(fill="#2D3184", alpha=0.7) +
+  geom_point() +
+  ggtitle("Sp")
+
+Wc_la_data<-Biom_data[Biom_data$Species=="Wc" & Biom_data$Days %in% c(0, 60), ] %>%
+  select(., Block, Mixture, Days, Mean_LA) %>%
+  pivot_wider(., names_from=Days, values_from = Mean_LA)
+Wc_la_data$difference<-Wc_la_data$'60'-Wc_la_data$'0'
+Wc_la_data$otherspecies<-rep(c("Wc", "Lm", "Sp", "Lt", "LmSp", "LmLt", "SpLt", "LmSpLt"), 3)
+
+Wc_boxplot<-
+  ggplot(Wc_la_data, aes(x = otherspecies, y = difference)) + 
+  geom_boxplot(fill="#2D3184", alpha=0.7) +
+  geom_point() +
+  ggtitle("Wc")
+
+Lt_la_data<-Biom_data[Biom_data$Species=="Lt" & Biom_data$Days %in% c(0, 60), ] %>%
+  select(., Block, Mixture, Days, Mean_LA) %>%
+  pivot_wider(., names_from=Days, values_from = Mean_LA)
+Lt_la_data$difference<-Lt_la_data$'60'-Lt_la_data$'0'
+Lt_la_data$otherspecies<-rep(c("Lt", "Lm", "Sp", "Wc", "LmSp", "LmWc", "SpWc", "LmSpWc"), 3)
+
+Lt_boxplot<-
+  ggplot(Lt_la_data, aes(x = otherspecies, y = difference)) + 
+  geom_boxplot(fill="#2D3184", alpha=0.7) +
+  geom_point() +
+  ggtitle("Lt")
+
+
+ggarrange(Lm_boxplot, Sp_boxplot, Wc_boxplot, Lt_boxplot)
+```
+### Functional diversity calculations
+#### Abundance matrices
+```{r}
+Biom_data$MixBlock<-paste(Biom_data$Mixture, Biom_data$Block, sep="_")
+Biom_data$MixBlockSp<-paste(Biom_data$Species, Biom_data$Mixture, Biom_data$Block, sep="_")
+
+a_matrix<-subset(Biom_data, Biom_data$Days==0 & !(Biom_data$Mixture %in% c("Lm", "Sp", "Wc", "Lt"))) %>%
+  select(., MixBlock, Species, Initial_relbiomass) %>%
+  unique() %>%
+  pivot_wider(names_from=Species, values_from=Initial_relbiomass) %>% #NAs will be replaced by 0
+  column_to_rownames(var="MixBlock") %>%
+  as.matrix()
+a_matrix_block1<-a_matrix[1:11,]
+a_matrix_block2<-a_matrix[12:22,]
+a_matrix_block3<-a_matrix[23:33,]
+
+a_matrix_poly<-subset(Biom_data, Biom_data$Days==0 & !(Biom_data$Mixture %in% c("Lm", "Sp", "Wc", "Lt"))) %>%
+  select(., MixBlock, MixBlockSp, Initial_relbiomass) %>%
+  unique() %>%
+  pivot_wider(names_from=MixBlockSp, values_from=Initial_relbiomass) %>%
+  column_to_rownames(var="MixBlock") %>%
+  as.matrix()
+a_matrix_poly_block1<-a_matrix_poly[1:11, 1:28]
+a_matrix_poly_block2<-a_matrix_poly[12:22, 29:56]
+a_matrix_poly_block3<-a_matrix_poly[23:33, 57:84]
+```
+
+#### FFD
+```{r}
+#FFD
+#mean value of leaf area when Days==0; one value per species
+d_matrix_ffd<-Biom_data[Biom_data$Days==0 & Biom_data$Mixture %in% unique(Biom_data$Species), ] %>%
+  group_by(Mixture) %>%
+  mutate(mean3_LA=mean(Mean_LA)) %>%
+  select(., Mixture, mean3_LA) %>%
+  unique() %>%
+  column_to_rownames(var="Mixture")
+colnames(d_matrix_ffd)<-"LA"
+
+ffd<-as.data.frame(fdisp(dist(d_matrix_ffd), a_matrix)$FDis)
+colnames(ffd)<-"FFD"
+```
+
+#### FFD60
+```{r}
+#FFD60 ; here we use one value of leaf area per species (leaf area = mean of leaf area computed from the values of each of the 3 blocks at 60 days)
+d_matrix_ffd60<-Biom_data[Biom_data$Days==60 & Biom_data$Mixture %in% unique(Biom_data$Species), ] %>%
+  group_by(Mixture) %>%
+  mutate(mean3_LA=mean(Mean_LA)) %>%
+  select(., Mixture, mean3_LA) %>%
+  unique() %>%
+  column_to_rownames(var="Mixture")
+colnames(d_matrix_ffd60)<-"LA"
+
+ffd60<-as.data.frame(fdisp(dist(d_matrix_ffd60), a_matrix)$FDis)
+colnames(ffd60)<-"FFD60"
+
+#FFD60 (PER BLOCK) ; here we consider the different blocks (leaf area = raw value at 60 days for each monoculture)
+#block 1
+d_matrix_ffd60_Bl1<-Biom_data[Biom_data$Days==60 & Biom_data$Mixture %in% unique(Biom_data$Species) & Biom_data$Block==1, ] %>%
+  select(., Mixture, Mean_LA) %>%
+  unique()
+row.names(d_matrix_ffd60_Bl1)<-as.vector(d_matrix_ffd60_Bl1$Mixture) 
+d_matrix_ffd60_Bl1<-d_matrix_ffd60_Bl1 %>% select(., Mean_LA)
+colnames(d_matrix_ffd60_Bl1)<-"LA"
+
+ffd60_Bl1<-as.data.frame(fdisp(dist(d_matrix_ffd60_Bl1), a_matrix_block1)$FDis)
+colnames(ffd60_Bl1)<-"FFD60_perblock"
+
+#block 2
+d_matrix_ffd60_Bl2<-Biom_data[Biom_data$Days==60 & Biom_data$Mixture %in% unique(Biom_data$Species) & Biom_data$Block==2, ] %>%
+  select(., Mixture, Mean_LA) %>%
+  unique()
+row.names(d_matrix_ffd60_Bl2)<-as.vector(d_matrix_ffd60_Bl2$Mixture) 
+d_matrix_ffd60_Bl2<-d_matrix_ffd60_Bl2 %>% select(., Mean_LA)
+colnames(d_matrix_ffd60_Bl2)<-"LA"
+
+ffd60_Bl2<-as.data.frame(fdisp(dist(d_matrix_ffd60_Bl2), a_matrix_block2)$FDis)
+colnames(ffd60_Bl2)<-"FFD60_perblock"
+
+#block 3
+d_matrix_ffd60_Bl3<-Biom_data[Biom_data$Days==60 & Biom_data$Mixture %in% unique(Biom_data$Species) & Biom_data$Block==3, ] %>%
+  select(., Mixture, Mean_LA) %>%
+  unique()
+row.names(d_matrix_ffd60_Bl3)<-as.vector(d_matrix_ffd60_Bl3$Mixture) 
+d_matrix_ffd60_Bl3<-d_matrix_ffd60_Bl3 %>% select(., Mean_LA)
+colnames(d_matrix_ffd60_Bl3)<-"LA"
+
+ffd60_Bl3<-as.data.frame(fdisp(dist(d_matrix_ffd60_Bl3), a_matrix_block3)$FDis)
+colnames(ffd60_Bl3)<-"FFD60_perblock"
+
+#put together
+ffd60_perblock<-rbind(ffd60_Bl1, ffd60_Bl2, ffd60_Bl3)
+```
+
+### RFD
+```{r}
+# RFD ; here we consider each culture seperately
+# block 1 
+d_matrix_rfd_Bl1<-Biom_data[Biom_data$Days==60 & !(Biom_data$Mixture %in% c("Lm", "Sp", "Wc", "Lt")) & Biom_data$Block==1, ] %>%
+  select(., MixBlockSp, Mean_LA) %>%
+  unique()
+row.names(d_matrix_rfd_Bl1)<-as.vector(d_matrix_rfd_Bl1$MixBlockSp) 
+d_matrix_rfd_Bl1<-d_matrix_rfd_Bl1 %>% select(., Mean_LA)
+colnames(d_matrix_rfd_Bl1)<-"LA"
+
+rfd_Bl1<-as.data.frame(fdisp(dist(d_matrix_rfd_Bl1), a_matrix_poly_block1)$FDis)
+colnames(rfd_Bl1)<-"RFD"
+
+#block 2
+d_matrix_rfd_Bl2<-Biom_data[Biom_data$Days==60 & !(Biom_data$Mixture %in% c("Lm", "Sp", "Wc", "Lt")) & Biom_data$Block==2, ] %>%
+  select(., MixBlockSp, Mean_LA) %>%
+  unique()
+row.names(d_matrix_rfd_Bl2)<-as.vector(d_matrix_rfd_Bl2$MixBlockSp) 
+d_matrix_rfd_Bl2<-d_matrix_rfd_Bl2 %>% select(., Mean_LA)
+colnames(d_matrix_rfd_Bl2)<-"LA"
+
+rfd_Bl2<-as.data.frame(fdisp(dist(d_matrix_rfd_Bl2), a_matrix_poly_block2)$FDis)
+colnames(rfd_Bl2)<-"RFD"
+
+#block 3
+d_matrix_rfd_Bl3<-Biom_data[Biom_data$Days==60 & !(Biom_data$Mixture %in% c("Lm", "Sp", "Wc", "Lt")) & Biom_data$Block==3, ] %>%
+  select(., MixBlockSp, Mean_LA) %>%
+  unique()
+row.names(d_matrix_rfd_Bl3)<-as.vector(d_matrix_rfd_Bl3$MixBlockSp) 
+d_matrix_rfd_Bl3<-d_matrix_rfd_Bl3 %>% select(., Mean_LA)
+colnames(d_matrix_rfd_Bl3)<-"LA"
+
+rfd_Bl3<-as.data.frame(fdisp(dist(d_matrix_rfd_Bl3), a_matrix_poly_block3)$FDis)
+colnames(rfd_Bl3)<-"RFD"
+
+#put together
+rfd<-rbind(rfd_Bl1, rfd_Bl2, rfd_Bl3)
+```
+
+#### Combine all FD indices
+```{r}
+fd<-cbind(ffd, ffd60, ffd60_perblock, rfd)
+```
+
+### Models
+```{r}
+fd_NE<-cbind(fd, NE60)
+
+#model NE ~ FFD
+modNEFFD<-lme(NE ~ FFD, random=list(dummy = pdBlocked(list(pdIdent(~Composition-1), pdIdent(~Block-1)))), data=fd_NE)
+modNEFFD
+summary(modNEFFD)
+r.squaredGLMM(modNEFFD)
+plot(NE ~ FFD, data = fd_NE) 
+abline(modNEFFD)
+
+par(mfrow=c(1,2))
+plot(fitted(modNEFFD), resid(modNEFFD,type="pearson"))
+qqnorm(resid(modNEFFD,type="pearson"))
+qqline(resid(modNEFFD,type="pearson"))
+shapiro.test(modNEFFD$residuals)
+```
+
+```{r}
+#model NE ~ FFD2
+modNEFFD2<-lme(NE ~ FFD60_perblock, random=list(dummy = pdBlocked(list(pdIdent(~Composition-1), pdIdent(~Block-1)))), data=fd_NE)
+modNEFFD2
+summary(modNEFFD2)
+r.squaredGLMM(modNEFFD2)
+plot(NE ~ FFD60_perblock, data = fd_NE) 
+abline(modNEFFD2)
+
+par(mfrow=c(1,2))
+plot(fitted(modNEFFD2), resid(modNEFFD2,type="pearson"))
+qqnorm(resid(modNEFFD2,type="pearson"))
+qqline(resid(modNEFFD2,type="pearson"))
+shapiro.test(modNEFFD2$residuals)
+```
+
+```{r}
+#model NE ~ FFD2 - mean of all blocks
+modNEFFD2_m<-lme(NE ~ FFD60, random=list(dummy = pdBlocked(list(pdIdent(~Composition-1), pdIdent(~Block-1)))), data=fd_NE)
+modNEFFD2_m
+summary(modNEFFD2_m)
+r.squaredGLMM(modNEFFD2_m)
+plot(NE ~ FFD60, data = fd_NE) 
+abline(modNEFFD2_m)
+
+par(mfrow=c(1,2))
+plot(fitted(modNEFFD2_m), resid(modNEFFD2_m,type="pearson"))
+qqnorm(resid(modNEFFD2_m,type="pearson"))
+qqline(resid(modNEFFD2_m,type="pearson"))
+shapiro.test(modNEFFD2_m$residuals)
+```
+
+```{r}
+#model NE ~ RFD
+modNERFD<-lme(NE ~ RFD, random=list(dummy = pdBlocked(list(pdIdent(~Composition-1), pdIdent(~Block-1)))), data=fd_NE)
+modNERFD
+summary(modNERFD)
+r.squaredGLMM(modNERFD)
+plot(NE ~ FFD60, data = fd_NE) 
+abline(modNEFFD2_m)
+
+par(mfrow=c(1,2))
+plot(fitted(modNERFD), resid(modNERFD,type="pearson"))
+qqnorm(resid(modNERFD,type="pearson"))
+qqline(resid(modNERFD,type="pearson"))
+shapiro.test(modNERFD$residuals)
+```
+
+```{r}
+#model CE ~ FFD
+modCEFFD<-lme (CE ~ FFD, random=list(dummy = pdBlocked(list(pdIdent(~Composition-1), pdIdent(~Block-1)))), data=fd_NE)
+modCEFFD
+summary(modCEFFD)
+r.squaredGLMM(modCEFFD)
+plot(CE ~ FFD, data = fd_NE) 
+abline(modCEFFD)
+
+par(mfrow=c(1,2))
+plot(fitted(modCEFFD), resid(modCEFFD,type="pearson"))
+qqnorm(resid(modCEFFD,type="pearson"))
+qqline(resid(modCEFFD,type="pearson"))
+shapiro.test(modCEFFD$residuals)
+```
+
+```{r}
+#model CE ~ FFD2
+modCEFFD2<-lme (CE ~ FFD60_perblock, random=list(dummy = pdBlocked(list(pdIdent(~Composition-1), pdIdent(~Block-1)))), data=fd_NE)
+modCEFFD2
+summary(modCEFFD2)
+r.squaredGLMM(modCEFFD2)
+plot(CE ~ FFD60_perblock, data = fd_NE) 
+abline(modCEFFD2)
+
+par(mfrow=c(1,2))
+plot(fitted(modCEFFD2), resid(modCEFFD2,type="pearson"))
+qqnorm(resid(modCEFFD2,type="pearson"))
+qqline(resid(modCEFFD2,type="pearson"))
+shapiro.test(modCEFFD2$residuals)
+```
+
+```{r}
+#model CE ~ FFD2 - mean of all blocks 
+modCEFFD2_m<-lme (CE ~ FFD60, random=list(dummy = pdBlocked(list(pdIdent(~Composition-1), pdIdent(~Block-1)))), data=fd_NE)
+modCEFFD2_m
+summary(modCEFFD2_m)
+r.squaredGLMM(modCEFFD2_m)
+plot(CE ~ FFD60, data = fd_NE) 
+abline(modCEFFD2_m)
+
+par(mfrow=c(1,2))
+plot(fitted(modCEFFD2), resid(modCEFFD2,type="pearson"))
+qqnorm(resid(modCEFFD2,type="pearson"))
+qqline(resid(modCEFFD2,type="pearson"))
+shapiro.test(modCEFFD2$residuals)
+```
