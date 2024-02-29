@@ -13,6 +13,7 @@ Alain Paquette (1)
 This repository stores the code, data and final figures for all analyses in this study.
 
 ##METADATA
+
 It contains 2 datasets: 
 "NE_data.csv" contains data on Relative yield total (RYT), Net biodiversity effect (NE), Complementarity effect (CE) and Selection effect (SE) for all the polycultures in every block at Days 0, 20, 40 and 60.
 
