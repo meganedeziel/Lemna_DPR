@@ -13,7 +13,7 @@
 
 <meta name="date" content="2024-01-10" />
 
-<title>3.Repeated_Measures_ANOVAs</title>
+<title>3. Repeated Measures ANOVAs</title>
 
 <script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
 // be compatible with the behavior of Pandoc < 2.8).
@@ -350,7 +350,7 @@ display: none;
 
 
 
-<h1 class="title toc-ignore">3.Repeated_Measures_ANOVAs</h1>
+<h1 class="title toc-ignore">3. Repeated Measures ANOVAs</h1>
 <h4 class="author">meganedeziel</h4>
 <h4 class="date">2024-01-10</h4>
 
@@ -612,18 +612,8 @@ p&lt;-ggplot(data=Plotdat_fin, aes(fill=Species, y=mean_fin_relbiomass, x=Mixtur
     theme(text=element_text(size=15), axis.text.x = element_text(size = 13, angle = 60, hjust=1), panel.grid.major.y = element_line( size=.1, color=&quot;black&quot;)) +
     labs(x=&quot;Mixture&quot;, y=&quot;Average biomass (mg)&quot;, pch=8) + 
     scale_y_continuous(limits=c(0, 3600), breaks=seq(0, 3600, by=400)) +
-    geom_errorbar(aes(x=Mixture, ymin=mean_tot_biomass-sd_tot_biomass, ymax=mean_tot_biomass+sd_tot_biomass), width=0.4, colour=&quot;black&quot;, alpha=0.9, size=1.3)</code></pre>
-<pre><code>## Warning: The `size` argument of `element_line()` is deprecated as of ggplot2 3.4.0.
-## ℹ Please use the `linewidth` argument instead.
-## This warning is displayed once every 8 hours.
-## Call `lifecycle::last_lifecycle_warnings()` to see where this warning was
-## generated.</code></pre>
-<pre><code>## Warning: Using `size` aesthetic for lines was deprecated in ggplot2 3.4.0.
-## ℹ Please use `linewidth` instead.
-## This warning is displayed once every 8 hours.
-## Call `lifecycle::last_lifecycle_warnings()` to see where this warning was
-## generated.</code></pre>
-<pre class="r"><code>  # Add stars based on significance levels; LmLt, SpWc, SpLt, WcLt, LmSpLt, SpWcLt, LmWcLt, LmSpWcLt
+    geom_errorbar(aes(x=Mixture, ymin=mean_tot_biomass-sd_tot_biomass, ymax=mean_tot_biomass+sd_tot_biomass), width=0.4, colour=&quot;black&quot;, alpha=0.9, size=1.3)
+  # Add stars based on significance levels; LmLt, SpWc, SpLt, WcLt, LmSpLt, SpWcLt, LmWcLt, LmSpWcLt
   #annotate(
     #&quot;text&quot;,
     #x = c(7, 8, 9, 10, 12, 13, 14, 15),  # x-coordinates where stars should be placed

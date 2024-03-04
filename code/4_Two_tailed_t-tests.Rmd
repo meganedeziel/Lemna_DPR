@@ -6,7 +6,7 @@ output: html_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = TRUE, message=FALSE, warning=FALSE)
 ```
 
 This code aims to test the hypothesis that Net effect is different (less than OR greater than) from 0 in each of the mixtures at different levels of the factor Days.
