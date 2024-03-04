@@ -1,5 +1,5 @@
 # Lemna_BEF
-The effect of biodiversity on plant productivity changes over time. A study based on duckweed communities.
+The effect of biodiversity on productivity changes over time in duckweed communities.
 
 Authors:
 Alex-Anne Couture (1)
