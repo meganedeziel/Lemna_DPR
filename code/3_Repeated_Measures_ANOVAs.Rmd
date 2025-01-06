@@ -48,40 +48,23 @@ NE_data %>%
 ```
 No extreme outliers
 
-### Test normality assumption
-```{r}
-NE_data %>%
-  group_by(Composition, Days) %>%
-  shapiro_test(NE) %>%
-  ungroup()
-
-NE_data[NE_data$CE!=0,] %>%
-  group_by(Composition, Days) %>%
-  shapiro_test(CE)
-
-NE_data %>%
-  group_by(Composition, Days) %>%
-  shapiro_test(SE)
-
-#All response vars follow a normal distribution when considered by every level of the factor Days
-```
-
 ### Test
 ```{r}
 #Compute many repeated measures ANOVAs, one per different Composition for NE, CE and SE seperately 
 NE_Anova <- NE_data %>%
   group_by(Composition) %>%
   anova_test(dv = NE, wid = Block, within = Days) %>%
+  ungroup() %>%
   adjust_pvalue(method="fdr") %>%
   add_significance("p.adj") %>%
   get_anova_table()
 data.frame(NE_Anova)
 
-result<-anova_test(data=NE_data[NE_data$Composition=="LmLt", ], dv = NE, wid = Block, within = Days)
 
 CE_Anova <- NE_data %>%
   group_by(Composition) %>%
   anova_test(dv = CE, wid = Block, within = Days) %>%
+  ungroup() %>%
   adjust_pvalue(method="fdr") %>%
   add_significance("p.adj") %>%
   get_anova_table()
@@ -90,10 +73,12 @@ data.frame(CE_Anova)
 SE_Anova <- NE_data %>%
   group_by(Composition) %>%
   anova_test(dv = SE, wid = Block, within = Days) %>%
+  ungroup() %>%
   adjust_pvalue(method="fdr") %>%
   add_significance("p.adj") %>%
   get_anova_table()
 data.frame(SE_Anova)
+
 ```
 
 ### Plot the relative contribution of species to the average biomass on day 60 of the experiment
@@ -110,7 +95,7 @@ Biom_data<-read.csv(here("data", "Relativebiomass_data.csv"), sep=";")
 Plot_species<-Biom_data[Biom_data$Days==60,] %>%
   group_by(Mixture, Species) %>%
   mutate(mean_fin_relbiomass=mean(Final_relbiomass)) %>%
-  mutate(standard_error=sd(Final_relbiomass)/sqrt(n())) %>%  #calculates standard error in biomass of each species composing the mixtures
+  mutate(standard_error=sd(Final_relbiomass)/sqrt(n())) %>%
   dplyr::select(., 3:5, 11, 12) %>%
   ungroup() %>%
   unique() 
