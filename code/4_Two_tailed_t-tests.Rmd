@@ -30,7 +30,12 @@ Alternative hypothesis: Diversity has a significant effect on net effect (NE != 
 NE60<-NE_data[NE_data$Days=="60",] %>%
   group_by(Composition) %>%
   t_test(NE ~ 0) %>%
-  add_significance()
+  add_significance()  %>%
+  ungroup()  %>%  # Perform one-sample t-tests
+  mutate(
+    p_adjusted = p.adjust(p, method = "fdr"),  # Apply FDR correction
+    significance_corrected = ifelse(p_adjusted < 0.05, "significant", "not significant")
+  )
 NE60
 meanNE60<-NE_data[NE_data$Days=="60",] %>%
   group_by(Composition) %>%
@@ -40,7 +45,14 @@ meanNE60<-NE_data[NE_data$Days=="60",] %>%
 NE40<-NE_data[NE_data$Days=="40",] %>%
   group_by(Composition) %>%
   t_test(NE ~ 0) %>%
-  add_significance()
+  add_significance() %>%
+  ungroup()  %>%  
+  adjust_pvalue(method="fdr") %>% # Perform one-sample t-tests
+  mutate(
+    p_adjusted = p.adjust(p, method = "fdr"),  # Apply FDR correction
+    significance_corrected = ifelse(p_adjusted < 0.05, "significant", "not significant")
+  )
+
 NE40
 meanNE40<-NE_data[NE_data$Days=="40",] %>%
   group_by(Composition) %>%
@@ -50,7 +62,12 @@ meanNE40<-NE_data[NE_data$Days=="40",] %>%
 NE20<-NE_data[NE_data$Days=="20",] %>%
   group_by(Composition) %>%
   t_test(NE ~ 0) %>%
-  add_significance()
+  add_significance() %>%
+  ungroup()  %>%  # Perform one-sample t-tests
+  mutate(
+    p_adjusted = p.adjust(p, method = "fdr"),  # Apply FDR correction
+    significance_corrected = ifelse(p_adjusted < 0.05, "significant", "not significant")
+  )
 NE20
 meanNE20<-NE_data[NE_data$Days=="20",] %>%
   group_by(Composition) %>%
@@ -63,7 +80,12 @@ meanNE20<-NE_data[NE_data$Days=="20",] %>%
 CE60<-NE_data[NE_data$Days=="60",] %>%
   group_by(Composition) %>%
   t_test(CE ~ 0) %>%
-  add_significance()
+  add_significance()  %>%
+  ungroup()  %>%  # Perform one-sample t-tests
+  mutate(
+    p_adjusted = p.adjust(p, method = "fdr"),  # Apply FDR correction
+    significance_corrected = ifelse(p_adjusted < 0.05, "significant", "not significant")
+  )
 CE60
 meanCE60<-NE_data[NE_data$Days=="60",] %>%
   group_by(Composition) %>%
@@ -73,7 +95,12 @@ meanCE60<-NE_data[NE_data$Days=="60",] %>%
 CE40<-NE_data[NE_data$Days=="40",] %>%
   group_by(Composition) %>%
   t_test(CE ~ 0) %>%
-  add_significance()
+  add_significance()  %>%
+  ungroup()  %>%  # Perform one-sample t-tests
+  mutate(
+    p_adjusted = p.adjust(p, method = "fdr"),  # Apply FDR correction
+    significance_corrected = ifelse(p_adjusted < 0.05, "significant", "not significant")
+  )
 CE40
 meanCE40<-NE_data[NE_data$Days=="40",] %>%
   group_by(Composition) %>%
@@ -83,7 +110,12 @@ meanCE40<-NE_data[NE_data$Days=="40",] %>%
 CE20<-NE_data[NE_data$Days=="20",] %>%
   group_by(Composition) %>%
   t_test(CE ~ 0) %>%
-  add_significance()
+  add_significance()  %>%
+  ungroup()  %>%  # Perform one-sample t-tests
+  mutate(
+    p_adjusted = p.adjust(p, method = "fdr"),  # Apply FDR correction
+    significance_corrected = ifelse(p_adjusted < 0.05, "significant", "not significant")
+  )
 CE20
 meanCE20<-NE_data[NE_data$Days=="20",] %>%
   group_by(Composition) %>%
@@ -96,7 +128,12 @@ meanCE20<-NE_data[NE_data$Days=="20",] %>%
 SE60<-NE_data[NE_data$Days=="60",] %>%
   group_by(Composition) %>%
   t_test(SE ~ 0) %>%
-  add_significance()
+  add_significance()  %>%
+  ungroup()  %>%  # Perform one-sample t-tests
+  mutate(
+    p_adjusted = p.adjust(p, method = "fdr"),  # Apply FDR correction
+    significance_corrected = ifelse(p_adjusted < 0.05, "significant", "not significant")
+  )
 SE60
 meanSE60<-NE_data[NE_data$Days=="60",] %>%
   group_by(Composition) %>%
@@ -106,17 +143,26 @@ meanSE60<-NE_data[NE_data$Days=="60",] %>%
 SE40<-NE_data[NE_data$Days=="40",] %>%
   group_by(Composition) %>%
   t_test(SE ~ 0) %>%
-  add_significance()
+  add_significance()  %>%
+  ungroup()  %>%  # Perform one-sample t-tests
+  mutate(
+    p_adjusted = p.adjust(p, method = "fdr"),  # Apply FDR correction
+    significance_corrected = ifelse(p_adjusted < 0.05, "significant", "not significant")
+  )
 SE40
 meanSE40<-NE_data[NE_data$Days=="40",] %>%
   group_by(Composition) %>%
   mutate(mean_40=mean(SE)) %>%
-  unique()
+  unique() 
 
 SE20<-NE_data[NE_data$Days=="20",] %>%
   group_by(Composition) %>%
   t_test(SE ~ 0) %>%
-  add_significance()
+  add_significance()  %>%  # Perform one-sample t-tests
+  mutate(
+    p_adjusted = p.adjust(p, method = "fdr"),  # Apply FDR correction
+    significance_corrected = ifelse(p_adjusted < 0.05, "significant", "not significant")
+  )
 SE20
 meanSE20<-NE_data[NE_data$Days=="20",] %>%
   group_by(Composition) %>%
