@@ -5,11 +5,14 @@ Authors:
 Alex-Anne Couture (1)
 Mégane Déziel (1)
 Jacques Brisson (2)
+Mark Jewell (3)
 Alain Paquette (1)
 
 (1) Centre for Forest Research, Département des sciences biologiques, Université du Québec à Montréal, Montreal, Canada
 
 (2) Institut de recherche en biologie végétale, Département des sciences biologiques, Université de Montréal, Montreal, Canada
+
+(3) Deparment of biology, Concordia University, Montreal, Canada
 
 This repository stores the code, data and final figures for all analyses in this study.
 
