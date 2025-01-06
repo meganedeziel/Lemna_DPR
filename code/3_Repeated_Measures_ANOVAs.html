@@ -409,68 +409,13 @@ NE_data&lt;-NE_data %&gt;%
 ## 5 60    3     LmSpLt       2.29 898.   2435.  -1537.   TRUE       FALSE</code></pre>
 <p>No extreme outliers</p>
 </div>
-<div id="test-normality-assumption" class="section level3">
-<h3>Test normality assumption</h3>
-<pre class="r"><code>NE_data %&gt;%
-  group_by(Composition, Days) %&gt;%
-  shapiro_test(NE) %&gt;%
-  ungroup()</code></pre>
-<pre><code>## # A tibble: 44 × 5
-##    Composition Days  variable statistic      p
-##    &lt;fct&gt;       &lt;fct&gt; &lt;chr&gt;        &lt;dbl&gt;  &lt;dbl&gt;
-##  1 LmLt        0     NE           0.779 0.0653
-##  2 LmLt        20    NE           0.975 0.699 
-##  3 LmLt        40    NE           0.971 0.676 
-##  4 LmLt        60    NE           0.938 0.518 
-##  5 LmSp        0     NE           1.00  0.961 
-##  6 LmSp        20    NE           0.967 0.650 
-##  7 LmSp        40    NE           0.999 0.932 
-##  8 LmSp        60    NE           0.890 0.353 
-##  9 LmSpLt      0     NE           0.990 0.807 
-## 10 LmSpLt      20    NE           0.912 0.424 
-## # ℹ 34 more rows</code></pre>
-<pre class="r"><code>NE_data[NE_data$CE!=0,] %&gt;%
-  group_by(Composition, Days) %&gt;%
-  shapiro_test(CE)</code></pre>
-<pre><code>## # A tibble: 38 × 5
-##    Composition Days  variable statistic       p
-##    &lt;fct&gt;       &lt;fct&gt; &lt;chr&gt;        &lt;dbl&gt;   &lt;dbl&gt;
-##  1 LmLt        20    CE           0.886 0.344  
-##  2 LmLt        40    CE           0.992 0.827  
-##  3 LmLt        60    CE           0.860 0.268  
-##  4 LmSp        20    CE           1.00  0.965  
-##  5 LmSp        40    CE           0.999 0.957  
-##  6 LmSp        60    CE           0.811 0.141  
-##  7 LmSpLt      0     CE           0.873 0.304  
-##  8 LmSpLt      20    CE           0.961 0.620  
-##  9 LmSpLt      40    CE           0.997 0.889  
-## 10 LmSpLt      60    CE           0.754 0.00857
-## # ℹ 28 more rows</code></pre>
-<pre class="r"><code>NE_data %&gt;%
-  group_by(Composition, Days) %&gt;%
-  shapiro_test(SE)</code></pre>
-<pre><code>## # A tibble: 44 × 5
-##    Composition Days  variable statistic      p
-##    &lt;fct&gt;       &lt;fct&gt; &lt;chr&gt;        &lt;dbl&gt;  &lt;dbl&gt;
-##  1 LmLt        0     SE           0.779 0.0653
-##  2 LmLt        20    SE           0.923 0.461 
-##  3 LmLt        40    SE           1.00  0.973 
-##  4 LmLt        60    SE           0.791 0.0924
-##  5 LmSp        0     SE           1.00  0.961 
-##  6 LmSp        20    SE           0.904 0.399 
-##  7 LmSp        40    SE           0.781 0.0698
-##  8 LmSp        60    SE           0.950 0.571 
-##  9 LmSpLt      0     SE           0.999 0.937 
-## 10 LmSpLt      20    SE           0.896 0.372 
-## # ℹ 34 more rows</code></pre>
-<pre class="r"><code>#All response vars follow a normal distribution when considered by every level of the factor Days</code></pre>
-</div>
 <div id="test" class="section level3">
 <h3>Test</h3>
 <pre class="r"><code>#Compute many repeated measures ANOVAs, one per different Composition for NE, CE and SE seperately 
 NE_Anova &lt;- NE_data %&gt;%
   group_by(Composition) %&gt;%
   anova_test(dv = NE, wid = Block, within = Days) %&gt;%
+  ungroup() %&gt;%
   adjust_pvalue(method=&quot;fdr&quot;) %&gt;%
   add_significance(&quot;p.adj&quot;) %&gt;%
   get_anova_table()
@@ -499,11 +444,10 @@ data.frame(NE_Anova)</code></pre>
 ## 9             *
 ## 10           **
 ## 11          ***</code></pre>
-<pre class="r"><code>result&lt;-anova_test(data=NE_data[NE_data$Composition==&quot;LmLt&quot;, ], dv = NE, wid = Block, within = Days)
-
-CE_Anova &lt;- NE_data %&gt;%
+<pre class="r"><code>CE_Anova &lt;- NE_data %&gt;%
   group_by(Composition) %&gt;%
   anova_test(dv = CE, wid = Block, within = Days) %&gt;%
+  ungroup() %&gt;%
   adjust_pvalue(method=&quot;fdr&quot;) %&gt;%
   add_significance(&quot;p.adj&quot;) %&gt;%
   get_anova_table()
@@ -535,6 +479,7 @@ data.frame(CE_Anova)</code></pre>
 <pre class="r"><code>SE_Anova &lt;- NE_data %&gt;%
   group_by(Composition) %&gt;%
   anova_test(dv = SE, wid = Block, within = Days) %&gt;%
+  ungroup() %&gt;%
   adjust_pvalue(method=&quot;fdr&quot;) %&gt;%
   add_significance(&quot;p.adj&quot;) %&gt;%
   get_anova_table()
@@ -579,7 +524,7 @@ day 60 of the experiment</h3>
 Plot_species&lt;-Biom_data[Biom_data$Days==60,] %&gt;%
   group_by(Mixture, Species) %&gt;%
   mutate(mean_fin_relbiomass=mean(Final_relbiomass)) %&gt;%
-  mutate(standard_error=sd(Final_relbiomass)/sqrt(n())) %&gt;%  #calculates standard error in biomass of each species composing the mixtures
+  mutate(standard_error=sd(Final_relbiomass)/sqrt(n())) %&gt;%
   dplyr::select(., 3:5, 11, 12) %&gt;%
   ungroup() %&gt;%
   unique() 
