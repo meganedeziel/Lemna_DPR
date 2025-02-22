@@ -1,5 +1,5 @@
 # Lemna_DPR
-The effect of biodiversity on productivity changes over time in duckweed communities.
+The Effect of Biodiversity on Productivity Changes Over Time in Duckweed Communities.
 
 Authors:
 Alex-Anne Couture (1)
