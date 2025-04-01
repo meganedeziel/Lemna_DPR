@@ -15,6 +15,7 @@ Alain Paquette (1)
 (3) Deparment of biology, Concordia University, Montreal, Canada
 
 This repository stores the code, data and final figures for all analyses in this study.
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.15121491.svg)](https://doi.org/10.5281/zenodo.15121491)
 
 ### METADATA
 
