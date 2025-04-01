@@ -318,7 +318,7 @@ modNERFD
 summary(modNERFD)
 r.squaredGLMM(modNERFD)
 plot(NE ~ FFD60, data = fd_NE) 
-abline(modNEFFD2_m)
+abline(modNERFD)
 
 par(mfrow=c(1,2))
 plot(fitted(modNERFD), resid(modNERFD,type="pearson"))
