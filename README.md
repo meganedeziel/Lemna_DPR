@@ -1,4 +1,6 @@
 # Lemna_DPR
+Couture, A. A., Déziel, M., Brisson, J., Davidson Jewell, M., & Paquette, A. (2025). The effect of biodiversity on productivity changes over time in duckweed communities. Oikos, e11092.
+
 The Effect of Biodiversity on Productivity Changes Over Time in Duckweed Communities.
 
 Authors:
@@ -17,6 +19,8 @@ Alain Paquette (1)
 This repository stores the code, data and final figures for all analyses in this study.
 
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.15121490.svg)](https://doi.org/10.5281/zenodo.15121490)
+
+Publication can be found at: https://nsojournals.onlinelibrary.wiley.com/doi/full/10.1002/oik.11092
 
 ### METADATA
 
